@@ -9,17 +9,70 @@ generator client {
 }
 
 datasource db {
-  provider = "mysql"
+  provider = "mongodb"
   url      = env("DATABASE_URL")
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  name      String   @db.VarChar(255)
-  email     String   @unique(map: "email") @db.VarChar(255)
-  password  String   @db.VarChar(255)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId // ID pengguna (otomatis dihasilkan oleh MongoDB)
+  name         String
+  email        String        @unique
+  password     String
+  createdAt    DateTime      @default(now())
+  // Relasi dengan Transactions
+  transactions Transaction[]
+}
 
-  @@map("users")
+model Category {
+  id          String  @id @default(auto()) @map("_id") @db.ObjectId // ID kategori
+  name        String
+  description String?
+
+  // Relasi dengan Item
+  items Item[]
+}
+
+model Item {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId // ID barang
+  name        String
+  description String?
+  quantity    Int       @default(0) // Total barang (jumlah batch)
+  categoryId  String    @db.ObjectId // ID kategori
+  createdAt   DateTime  @default(now())
+  expiredAt   DateTime?
+
+  // Relasi dengan Category
+  category Category @relation(fields: [categoryId], references: [id])
+
+  // Relasi dengan ItemBatch
+  batches     ItemBatch[]
+  Transaction Transaction[]
+}
+
+model ItemBatch {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId // ID batch
+  itemId    String    @db.ObjectId // ID barang
+  quantity  Int // Jumlah barang dalam batch
+  batchDate DateTime  @default(now()) // Tanggal barang masuk
+  expiredAt DateTime?
+
+  // Relasi dengan Item
+  item        Item          @relation(fields: [itemId], references: [id])
+  Transaction Transaction[]
+}
+
+model Transaction {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId // ID transaksi
+  itemId          String   @db.ObjectId // ID barang
+  batchId         String   @db.ObjectId // ID batch yang dikurangi
+  quantity        Int // Jumlah barang yang dikeluarkan
+  transactionDate DateTime @default(now())
+
+  // Relasi dengan Item
+  item Item @relation(fields: [itemId], references: [id])
+
+  // Relasi dengan ItemBatch
+  itemBatch ItemBatch @relation(fields: [batchId], references: [id])
+  User      User?     @relation(fields: [userId], references: [id])
+  userId    String?   @db.ObjectId
 }

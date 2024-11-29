@@ -14,11 +14,11 @@ export const authMiddleware = (req: UserRequest, res: Response, next: NextFuncti
     });
   }
 
-  jwt.verify(token, process.env.JWT_SECRET!, (err, user) => {
+  jwt.verify(token, process.env.JWT_SECRET!, (err, decoded) => {
     if (err) {
       return res.status(403).json({ message: "Invalid token" })
     }
-    req.user = user as User;
+    req.user = decoded as User;
     console.log("Authenticated User: ", req.user);
     next();
   });
